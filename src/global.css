@@ -1,0 +1,36 @@
+/* src/global.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  /* Set the app background globally */
+  .app-container {
+    @apply flex-1 bg-background dark:bg-gray-900;
+  }
+}
+
+@layer components {
+  /* The "90-Year-Old Friendly" Card */
+  .pill-card {
+    @apply bg-surface dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 mb-4;
+  }
+  
+  /* Big Text for Poor Vision */
+  .text-header {
+    @apply text-3xl font-bold text-gray-900 dark:text-white mb-2;
+  }
+
+  .text-body {
+    @apply text-lg font-sans text-gray-600 dark:text-gray-300;
+  }
+
+  /* The "Fat Finger" Button */
+  .btn-action {
+    @apply bg-action active:bg-green-600 py-5 px-6 rounded-xl flex-row items-center justify-center shadow-md;
+  }
+
+  .btn-text {
+    @apply text-white text-xl font-bold tracking-wide;
+  }
+}

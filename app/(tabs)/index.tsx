@@ -5,6 +5,7 @@ import { useFocusEffect, useRouter } from "expo-router";
 import { useColorScheme } from "nativewind"; 
 import { eq } from "drizzle-orm";
 import { Settings, Plus, Trash2, Edit3, PackagePlus, Ban, AlertTriangle, X } from "lucide-react-native";
+import { Alert } from "react-native";
 
 import { db } from "@/core/database/client";
 import { medications, logs, appSettings } from "@/core/database/schema";
@@ -61,7 +62,74 @@ export default function Dashboard() {
     } catch (error) { console.error("Failed to take pill:", error); }
   };
 
-  // --- POPUP BUTTONS (Fixed Type) ---
+  // 1. DELETE MEDICINE
+  const handleDelete = (med: any) => {
+    Alert.alert(
+      "Delete Medicine?",
+      `Are you sure you want to delete ${med.name}? This will remove all history and schedules.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        { 
+          text: "Delete", 
+          style: "destructive", 
+          onPress: async () => {
+            try {
+              await db.delete(medications).where(eq(medications.id, med.id));
+              setModalVisible(false);
+              loadData(); 
+            } catch (e) {
+              console.error(e);
+              Alert.alert("Error", "Could not delete medicine.");
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // 2. SKIP DOSE
+  const handleSkip = async (med: any) => {
+    const scheduleState = getNextDoseLabel(med.doses, med.logs);
+    // If no dose is due, skip the next upcoming one
+    const doseIdToSkip = scheduleState.nextDose?.id || null;
+
+    try {
+      await db.insert(logs).values({
+        medicationId: med.id,
+        doseId: doseIdToSkip, 
+        action: "SKIPPED",
+        timestamp: new Date()
+      });
+      setModalVisible(false);
+      loadData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // 3. REPORT LOST (Decrements Stock, Does NOT clear schedule)
+  const handleLost = async (med: any) => {
+    try {
+      await db.transaction(async (tx) => {
+        await tx.update(medications)
+          .set({ currentStock: med.currentStock - 1 })
+          .where(eq(medications.id, med.id));
+
+        await tx.insert(logs).values({
+          medicationId: med.id,
+          doseId: null, 
+          action: "LOST",
+          timestamp: new Date()
+        });
+      });
+      setModalVisible(false);
+      loadData();
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // --- UPDATED BUTTONS LIST ---
   const getPopupButtons = () => {
     const iconSize = 22;
     const iconColor = "white";
@@ -71,16 +139,47 @@ export default function Dashboard() {
 
     if (menuType === 'ADMIN') {
       const buttons: PopupButton[] = [
-        { text: "Restock Inventory", colorType: 'restock', icon: <PackagePlus size={iconSize} color={iconColor} />, onPress: () => console.log("Refill") },
-        { text: "Edit Details", colorType: 'edit', icon: <Edit3 size={iconSize} color={iconColor} />, onPress: () => console.log("Edit") },
-        { text: "Delete Medicine", colorType: 'delete', icon: <Trash2 size={iconSize} color={iconColor} />, onPress: () => console.log("Delete") },
+        { 
+          text: "Restock Inventory", 
+          colorType: 'restock', 
+          icon: <PackagePlus size={iconSize} color={iconColor} />, 
+          onPress: () => {
+            setModalVisible(false);
+            router.push(`/restock/${selectedMed.id}`);
+          }
+        },
+        { 
+          text: "Edit Details", 
+          colorType: 'edit', 
+          icon: <Edit3 size={iconSize} color={iconColor} />, 
+          onPress: () => {
+            setModalVisible(false);
+            router.push(`/edit/${selectedMed.id}`);
+          } 
+        },
+        { 
+          text: "Delete Medicine", 
+          colorType: 'delete', 
+          icon: <Trash2 size={iconSize} color={iconColor} />, 
+          onPress: () => handleDelete(selectedMed) 
+        },
         { text: "Cancel", colorType: 'cancel', icon: <X size={iconSize} color={cancelColor} />, onPress: () => setModalVisible(false) }
       ];
       return buttons;
     } else {
       const buttons: PopupButton[] = [
-        { text: "Skip This Dose", colorType: 'skip', icon: <Ban size={iconSize} color={iconColor} />, onPress: () => console.log("Skip") },
-        { text: "Report Lost/Dropped", colorType: 'lost', icon: <AlertTriangle size={iconSize} color={iconColor} />, onPress: () => console.log("Lost") },
+        { 
+          text: "Skip This Dose", 
+          colorType: 'skip', 
+          icon: <Ban size={iconSize} color={iconColor} />, 
+          onPress: () => handleSkip(selectedMed)
+        },
+        { 
+          text: "Report Lost/Dropped", 
+          colorType: 'lost', 
+          icon: <AlertTriangle size={iconSize} color={iconColor} />, 
+          onPress: () => handleLost(selectedMed) 
+        },
         { text: "Cancel", colorType: 'cancel', icon: <X size={iconSize} color={cancelColor} />, onPress: () => setModalVisible(false) }
       ];
       return buttons;

@@ -2,7 +2,7 @@ import { View, Text, SectionList, TouchableOpacity, ActivityIndicator, Alert } f
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useState, useCallback } from 'react';
 import { useFocusEffect } from 'expo-router';
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { format, isToday, isYesterday } from 'date-fns';
 import { Check, X, HelpCircle, Trash2, Database } from 'lucide-react-native';
 
@@ -83,10 +83,33 @@ export default function HistoryScreen() {
     Alert.alert("Success", "Test data added!");
   };
 
-  const deleteLog = async (logId: number) => {
-    await db.delete(logs).where(eq(logs.id, logId));
-    fetchHistory(); 
-  };
+const deleteLog = async (logItem: any) => {
+  Alert.alert("Undo Action", "Remove this record from history?", [
+    { text: "Cancel", style: "cancel" },
+    {
+      text: "Remove & Undo",
+      style: "destructive",
+      onPress: async () => {
+        try {
+          await db.transaction(async (tx) => {
+            if (logItem.action === 'TAKEN' || logItem.action === 'LOST') {
+              await tx.update(medications)
+                .set({ 
+                  currentStock: sql`${medications.currentStock} + 1`
+                })
+                .where(eq(medications.id, logItem.medicationId));
+            }
+            await tx.delete(logs).where(eq(logs.id, logItem.id));
+          });
+          fetchHistory();
+        } catch (e) {
+          console.error("Undo failed:", e);
+          Alert.alert("Error", "Could not undo this action.");
+        }
+      }
+    }
+  ]);
+};
 
   // UI Helpers
   const getIcon = (action: string) => {
@@ -159,7 +182,7 @@ export default function HistoryScreen() {
               </Text>
             </View>
 
-            <TouchableOpacity onPress={() => deleteLog(item.id)} className="p-2 opacity-50">
+            <TouchableOpacity onPress={() => deleteLog(item)} className="p-2 opacity-50">
                <Trash2 size={18} color="#EF4444" />
             </TouchableOpacity>
           </View>

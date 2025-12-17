@@ -1,36 +1,31 @@
 import { Tabs } from "expo-router";
-import { Home, Calendar, ShoppingBag } from "lucide-react-native"; // Import Calendar Icon
+import { Home, History, LayoutGrid, User } from "lucide-react-native";
 import { useColorScheme } from "nativewind";
+import { View } from "react-native";
 
 export default function TabLayout() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-
-  const colors = {
-    primary: isDark ? "#4D94FF" : "#0066CC",
-    background: isDark ? "#1F2937" : "#FFFFFF",
-    inactive: isDark ? "#9CA3AF" : "#6B7280",
-  };
 
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: colors.background,
-          borderTopWidth: 0,
-          elevation: 0,
-          height: 60,
+          backgroundColor: isDark ? "#111827" : "#ffffff",
+          borderTopColor: isDark ? "#1f2937" : "#e5e7eb",
+          height: 65,
           paddingBottom: 10,
           paddingTop: 10,
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
         },
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.inactive,
+        tabBarActiveTintColor: "#2563EB",
+        tabBarInactiveTintColor: isDark ? "#9CA3AF" : "#6B7280",
+        tabBarLabelStyle: {
+          fontWeight: "600",
+          fontSize: 12,
+        },
       }}
     >
-      {/* 1. Dashboard */}
       <Tabs.Screen
         name="index"
         options={{
@@ -39,21 +34,30 @@ export default function TabLayout() {
         }}
       />
 
-      {/* 2. NEW: Purchases Tab */}
+      {/* 2. HUB (New) */}
       <Tabs.Screen
-        name="purchases" // Make sure file is named purchases.tsx
+        name="hub"
         options={{
-          title: "Purchases",
-          tabBarIcon: ({ color }) => <ShoppingBag size={24} color={color} />,
+          title: "Hub",
+          tabBarIcon: ({ color }) => <LayoutGrid size={24} color={color} />,
         }}
       />
 
-      {/* 3. History */}
+      {/* 3. HISTORY */}
       <Tabs.Screen
         name="history"
         options={{
           title: "History",
-          tabBarIcon: ({ color }) => <Calendar size={24} color={color} />,
+          tabBarIcon: ({ color }) => <History size={24} color={color} />,
+        }}
+      />
+
+      {/* 4. PROFILE (New) */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: "Profile",
+          tabBarIcon: ({ color }) => <User size={24} color={color} />,
         }}
       />
     </Tabs>

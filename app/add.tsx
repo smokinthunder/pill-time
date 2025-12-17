@@ -1,13 +1,14 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, useColorScheme } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter } from "expo-router";
-import { useState } from "react";
-import { Clock, Plus, Trash2, Hash, Pill } from "lucide-react-native";
+import { useRouter, useLocalSearchParams } from "expo-router"; // Import Search Params
+import { useState, useEffect } from "react";
+import { Calendar, Clock, Save, Plus, Trash2, Hash, Pill } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "@/core/database/client";
 import { medications, doses } from "@/core/database/schema";
 import { ScreenHeader } from "@/components/ScreenHeader"; 
 import { useThemeAlert } from "@/context/ThemeAlertContext";
+import { MedicineAutofill } from "@/components/MedicineAutofill"; // IMPORT AUTOFILL
 
 const formatTime = (date: Date) => {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -15,6 +16,7 @@ const formatTime = (date: Date) => {
 
 export default function AddMedicine() {
   const router = useRouter();
+  const params = useLocalSearchParams(); // Get params
   const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -29,6 +31,13 @@ export default function AddMedicine() {
     { time: new Date(), qty: "1" }, 
   ]);
   const [showPicker, setShowPicker] = useState<{ visible: boolean; index: number }>({ visible: false, index: -1 });
+
+  // PRE-FILL NAME IF PASSED
+  useEffect(() => {
+    if (params.initialName) {
+        setName(params.initialName as string);
+    }
+  }, [params]);
 
   const toggleDay = (dayIndex: number) => {
     if (selectedDays.includes(dayIndex)) {
@@ -103,19 +112,27 @@ export default function AddMedicine() {
         icon={<Pill size={24} color={isDark ? '#60A5FA' : '#2563EB'} />} 
       />
 
-      <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
         <View className="mb-6">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Medicine Details</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
-            <View className="mb-4">
+            
+            <View className="mb-4 z-50"> 
               <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase mb-1">Name</Text>
-              <TextInput value={name} onChangeText={setName} placeholder="e.g. Metformin" placeholderTextColor="#9CA3AF" className="text-2xl font-bold text-gray-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-2" />
+              {/* REPLACED TEXTINPUT WITH AUTOFILL */}
+              <MedicineAutofill 
+                 value={name} 
+                 onChange={setName} 
+                 placeholder="e.g. Metformin" 
+                 isDark={isDark} 
+              />
             </View>
-            <View className="mb-5">
+
+            <View className="mb-5 -z-10">
               <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase mb-1">Instructions (Optional)</Text>
               <TextInput value={description} onChangeText={setDescription} placeholder="e.g. Take after food" placeholderTextColor="#9CA3AF" className="text-base text-gray-900 dark:text-white" />
             </View>
-            <View className="flex-row gap-3">
+            <View className="flex-row gap-3 -z-10">
               {(["nos", "mg", "ml"] as const).map((u) => (
                 <TouchableOpacity
                   key={u} onPress={() => setUnit(u)}
@@ -129,7 +146,10 @@ export default function AddMedicine() {
           </View>
         </View>
 
-        <View className="mb-6">
+        {/* ... (The rest of Inventory and Schedule sections remain EXACTLY the same) ... */}
+        {/* I am truncating here to save space, but DO NOT delete the Inventory/Schedule code you already have! */}
+        
+        <View className="mb-6 -z-10">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Inventory</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex-row items-center justify-between">
             <View>
@@ -143,8 +163,10 @@ export default function AddMedicine() {
           </View>
         </View>
 
-        <View className="mb-6">
-          <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Schedule</Text>
+        <View className="mb-6 -z-10">
+          {/* ... Schedule Section Logic (Toggle Daily/Weekly, Dose List) ... */}
+          {/* PASTE YOUR EXISTING SCHEDULE CODE HERE */}
+           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Schedule</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
             <View className="flex-row bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mb-6">
               <TouchableOpacity onPress={() => setFrequency("DAILY")} className="flex-1 py-2 rounded-lg items-center" style={{ backgroundColor: frequency === 'DAILY' ? (isDark ? '#4B5563' : 'white') : 'transparent', shadowOpacity: frequency === 'DAILY' ? 0.1 : 0 }}>
@@ -192,10 +214,13 @@ export default function AddMedicine() {
             </View>
           </View>
         </View>
+
       </ScrollView>
 
+      {/* FOOTER */}
       <View className="p-5 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 absolute bottom-0 left-0 right-0">
         <TouchableOpacity onPress={handleSave} className="bg-blue-600 w-full py-4 rounded-xl flex-row items-center justify-center shadow-lg">
+          <Save size={20} color="white" className="mr-2" />
           <Text className="text-white font-bold text-xl">Save Medicine</Text>
         </TouchableOpacity>
       </View>

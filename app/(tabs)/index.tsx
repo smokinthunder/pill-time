@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useColorScheme } from "nativewind"; 
 import { eq } from "drizzle-orm";
-import { Settings, Plus, Trash2, Edit3, PackagePlus, Ban, AlertTriangle, X } from "lucide-react-native";
+import { Settings, Plus, Trash2, Edit3, PackagePlus, Ban, AlertTriangle, X, MessageCircleQuestion } from "lucide-react-native";
 
 import { db } from "@/core/database/client";
 import { medications, logs, appSettings } from "@/core/database/schema";
@@ -131,8 +131,15 @@ export default function Dashboard() {
                 {userName} 👋
              </Text>
           </View>
-          <TouchableOpacity onPress={() => router.push("/settings")} className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm">
+          {/* <TouchableOpacity onPress={() => router.push("/settings")} className="p-2 bg-white dark:bg-gray-800 rounded-full shadow-sm">
             <Settings size={24} color="#6B7280" />
+          </TouchableOpacity> */}
+           {/* NEW CHAT ICON */}
+          <TouchableOpacity 
+            onPress={() => router.push("/chat")} 
+            className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-full shadow-sm border border-blue-100 dark:border-blue-900/50"
+          >
+            <MessageCircleQuestion size={24} color={isDark ? '#60A5FA' : '#2563EB'} />
           </TouchableOpacity>
         </View>
 

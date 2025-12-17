@@ -9,7 +9,7 @@ import 'react-native-reanimated';
 import '@/global.css';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initializeDatabase } from '@/core/database/initialize';
-import { ThemeAlertProvider } from '@/context/ThemeAlertContext'; // IMPORT
+import { ThemeAlertProvider } from '@/context/ThemeAlertContext';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -45,7 +45,7 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <ThemeAlertProvider> {/* WRAPPER ADDED */}
+      <ThemeAlertProvider>
         <Stack screenOptions={{ headerShown: false }}>
           <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
           <Stack.Screen name="add" options={{ presentation: 'modal', headerShown: false }} />

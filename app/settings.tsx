@@ -1,4 +1,4 @@
-import { View, Text, Switch, TouchableOpacity, TextInput, ScrollView, Alert, useColorScheme } from "react-native";
+import { View, Text, Switch, TouchableOpacity, TextInput, ScrollView, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { Calendar, Pill, AlertCircle, Save, Settings as SettingsIcon } from "lucide-react-native";
@@ -6,10 +6,12 @@ import { useState, useEffect } from "react";
 import { db } from "@/core/database/client";
 import { appSettings } from "@/core/database/schema";
 import { eq } from "drizzle-orm";
-import { ScreenHeader } from "@/components/ScreenHeader"; // Import
+import { ScreenHeader } from "@/components/ScreenHeader"; 
+import { useThemeAlert } from "@/context/ThemeAlertContext";
 
 export default function Settings() {
   const router = useRouter();
+  const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -39,14 +41,19 @@ export default function Settings() {
           refillThresholdDays: parseInt(refillThreshold) || 5
         }).where(eq(appSettings.id, allSettings[0].id));
       }
-      Alert.alert("Saved", "Settings updated.");
-      router.back(); 
-    } catch (e) { Alert.alert("Error", "Could not save settings."); }
+      showAlert({ 
+        title: "Saved", 
+        message: "Preferences updated.", 
+        variant: 'success',
+        buttons: [{ text: "OK", onPress: () => router.back() }]
+      });
+    } catch (e) { 
+        showAlert({ title: "Error", message: "Could not save settings.", variant: 'danger' });
+    }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      {/* HEADER */}
       <ScreenHeader 
         title="Settings" 
         subtitle="Preferences & Alerts"

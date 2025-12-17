@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Modal, View, Text, TouchableOpacity, useColorScheme } from 'react-native';
+import { Modal, View, Text, TouchableOpacity, useColorScheme, Pressable } from 'react-native';
 import { CheckCircle, Trash2, AlertTriangle, Info } from 'lucide-react-native';
 
 // --- TYPES ---
@@ -46,16 +46,15 @@ export const ThemeAlertProvider = ({ children }: { children: ReactNode }) => {
 
   const hideAlert = () => {
     setVisible(false);
-    setTimeout(() => setConfig(null), 300); // Clear after animation
+    setTimeout(() => setConfig(null), 300);
   };
 
-  // Helper to get Icon based on Variant
   const getIcon = () => {
     switch (config?.variant) {
-      case 'success': return <CheckCircle size={48} color={isDark ? '#4ADE80' : '#16A34A'} />; // Green
-      case 'danger': return <Trash2 size={48} color={isDark ? '#F87171' : '#DC2626'} />; // Red
-      case 'warning': return <AlertTriangle size={48} color={isDark ? '#FBBF24' : '#D97706'} />; // Amber
-      default: return <Info size={48} color={isDark ? '#60A5FA' : '#2563EB'} />; // Blue
+      case 'success': return <CheckCircle size={48} color={isDark ? '#4ADE80' : '#16A34A'} />;
+      case 'danger': return <Trash2 size={48} color={isDark ? '#F87171' : '#DC2626'} />;
+      case 'warning': return <AlertTriangle size={48} color={isDark ? '#FBBF24' : '#D97706'} />;
+      default: return <Info size={48} color={isDark ? '#60A5FA' : '#2563EB'} />;
     }
   };
 
@@ -63,9 +62,23 @@ export const ThemeAlertProvider = ({ children }: { children: ReactNode }) => {
     <ThemeAlertContext.Provider value={{ showAlert, hideAlert }}>
       {children}
 
-      <Modal transparent visible={visible} animationType="fade" statusBarTranslucent>
-        <View className="flex-1 justify-center items-center bg-black/60 px-6">
-          <View className="w-full bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-2xl items-center">
+      <Modal 
+        transparent 
+        visible={visible} 
+        animationType="fade" 
+        statusBarTranslucent
+        onRequestClose={hideAlert} // Handle Android Hardware Back Button
+      >
+        {/* OUTER: Pressable Background -> Closes Alert */}
+        <Pressable 
+          className="flex-1 justify-center items-center bg-black/60 px-6"
+          onPress={hideAlert} 
+        >
+          {/* INNER: Pressable Card -> Does Nothing (Blocks the close action) */}
+          <Pressable 
+            className="w-full bg-white dark:bg-gray-800 rounded-3xl p-6 shadow-2xl items-center"
+            onPress={(e) => e.stopPropagation()} 
+          >
             
             {/* 1. Icon Header */}
             <View className="mb-4 bg-gray-50 dark:bg-gray-700/50 p-4 rounded-full">
@@ -128,8 +141,8 @@ export const ThemeAlertProvider = ({ children }: { children: ReactNode }) => {
               )}
             </View>
 
-          </View>
-        </View>
+          </Pressable>
+        </Pressable>
       </Modal>
     </ThemeAlertContext.Provider>
   );

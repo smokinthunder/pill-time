@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, Alert, useColorScheme } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, useColorScheme } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -6,11 +6,13 @@ import { Check, PackagePlus } from 'lucide-react-native';
 import { db } from '@/core/database/client';
 import { medications, refills } from '@/core/database/schema';
 import { eq, sql } from 'drizzle-orm';
-import { ScreenHeader } from "@/components/ScreenHeader"; // Import
+import { ScreenHeader } from "@/components/ScreenHeader"; 
+import { useThemeAlert } from "@/context/ThemeAlertContext";
 
 export default function RestockScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   
@@ -28,7 +30,10 @@ export default function RestockScreen() {
   }, [id]);
 
   const handleRestock = async () => {
-    if (!qty) return Alert.alert("Error", "Please enter quantity");
+    if (!qty) {
+        showAlert({ title: "Missing Info", message: "Please enter the quantity added.", variant: 'warning' });
+        return;
+    }
     
     try {
       await db.transaction(async (tx) => {
@@ -47,21 +52,24 @@ export default function RestockScreen() {
         });
       });
       
-      Alert.alert("Success", "Stock updated!");
-      router.back();
+      showAlert({ 
+        title: "Restocked!", 
+        message: `${qty} pills added to inventory.`, 
+        variant: 'success',
+        buttons: [{ text: "Done", onPress: () => router.back() }]
+      });
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Restock failed");
+      showAlert({ title: "Error", message: "Restock failed.", variant: 'danger' });
     }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900 px-0" edges={['top']}>
-      {/* HEADER */}
       <ScreenHeader 
         title={medName ? `Restock ${medName}` : "Restock"} 
         subtitle="Add new pills to inventory"
-        icon={<PackagePlus size={24} color={isDark ? '#4ADE80' : '#16A34A'} />} // Green for restock
+        icon={<PackagePlus size={24} color={isDark ? '#4ADE80' : '#16A34A'} />} 
       />
 
       <View className="p-5">

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, useColorScheme } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ScrollView, useColorScheme } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
@@ -6,11 +6,13 @@ import { Save, Edit3 } from 'lucide-react-native';
 import { db } from '@/core/database/client';
 import { medications } from '@/core/database/schema';
 import { eq } from 'drizzle-orm';
-import { ScreenHeader } from "@/components/ScreenHeader"; // Import
+import { ScreenHeader } from "@/components/ScreenHeader"; 
+import { useThemeAlert } from "@/context/ThemeAlertContext";
 
 export default function EditMedicine() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
+  const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
@@ -46,17 +48,20 @@ export default function EditMedicine() {
         })
         .where(eq(medications.id, Number(id)));
 
-      Alert.alert("Success", "Medicine details updated.");
-      router.back();
+      showAlert({ 
+        title: "Updated", 
+        message: "Medicine details saved successfully.", 
+        variant: 'success',
+        buttons: [{ text: "OK", onPress: () => router.back() }]
+      });
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Update failed.");
+      showAlert({ title: "Error", message: "Update failed.", variant: 'danger' });
     }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      {/* HEADER */}
       <ScreenHeader 
         title="Edit Details" 
         subtitle="Update name or inventory"

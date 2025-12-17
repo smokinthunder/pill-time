@@ -1,12 +1,13 @@
-import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Platform, useColorScheme } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Platform, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Calendar, Clock, Save, Plus, Trash2, Hash, Pill } from "lucide-react-native";
+import { Clock, Plus, Trash2, Hash, Pill } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "@/core/database/client";
 import { medications, doses } from "@/core/database/schema";
-import { ScreenHeader } from "@/components/ScreenHeader"; // Import
+import { ScreenHeader } from "@/components/ScreenHeader"; 
+import { useThemeAlert } from "@/context/ThemeAlertContext";
 
 const formatTime = (date: Date) => {
   return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
@@ -14,10 +15,10 @@ const formatTime = (date: Date) => {
 
 export default function AddMedicine() {
   const router = useRouter();
+  const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
 
-  // --- STATE ---
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
   const [currentStock, setCurrentStock] = useState(""); 
@@ -29,7 +30,6 @@ export default function AddMedicine() {
   ]);
   const [showPicker, setShowPicker] = useState<{ visible: boolean; index: number }>({ visible: false, index: -1 });
 
-  // --- HANDLERS ---
   const toggleDay = (dayIndex: number) => {
     if (selectedDays.includes(dayIndex)) {
       setSelectedDays(selectedDays.filter((d) => d !== dayIndex));
@@ -60,16 +60,14 @@ export default function AddMedicine() {
 
   const handleSave = async () => {
     if (!name || !currentStock) {
-      Alert.alert("Missing Info", "Please enter the medicine name and how many you have.");
+      showAlert({ title: "Missing Info", message: "Please enter the medicine Name and Current Stock.", variant: 'warning' });
       return;
     }
 
     try {
       await db.transaction(async (tx) => {
         const medResult = await tx.insert(medications).values({
-            name,
-            description,
-            unit,
+            name, description, unit,
             currentStock: parseFloat(currentStock),
             totalStockLevel: parseFloat(currentStock), 
           }).returning({ id: medications.id });
@@ -85,18 +83,20 @@ export default function AddMedicine() {
           });
         }
       });
-      Alert.alert("Success", "Medicine added to schedule!");
-      router.back();
+      showAlert({ 
+        title: "Success!", 
+        message: `${name} has been added.`, 
+        variant: 'success',
+        buttons: [{ text: "Done", onPress: () => router.back() }] 
+      });
     } catch (e) {
       console.error(e);
-      Alert.alert("Error", "Could not save medicine.");
+      showAlert({ title: "Error", message: "Could not save medicine.", variant: 'danger' });
     }
   };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      
-      {/* HEADER */}
       <ScreenHeader 
         title="Add Medicine" 
         subtitle="New pill schedule"
@@ -104,7 +104,6 @@ export default function AddMedicine() {
       />
 
       <ScrollView className="flex-1 p-5" contentContainerStyle={{ paddingBottom: 100 }}>
-        {/* SECTION 1: BASICS */}
         <View className="mb-6">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Medicine Details</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -130,7 +129,6 @@ export default function AddMedicine() {
           </View>
         </View>
 
-        {/* SECTION 2: INVENTORY */}
         <View className="mb-6">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Inventory</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700 flex-row items-center justify-between">
@@ -145,7 +143,6 @@ export default function AddMedicine() {
           </View>
         </View>
 
-        {/* SECTION 3: FREQUENCY */}
         <View className="mb-6">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">Schedule</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm border border-gray-100 dark:border-gray-700">
@@ -197,10 +194,8 @@ export default function AddMedicine() {
         </View>
       </ScrollView>
 
-      {/* FOOTER */}
       <View className="p-5 bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 absolute bottom-0 left-0 right-0">
         <TouchableOpacity onPress={handleSave} className="bg-blue-600 w-full py-4 rounded-xl flex-row items-center justify-center shadow-lg">
-          <Save size={20} color="white" className="mr-2" />
           <Text className="text-white font-bold text-xl">Save Medicine</Text>
         </TouchableOpacity>
       </View>

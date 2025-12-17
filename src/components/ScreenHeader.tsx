@@ -13,7 +13,7 @@ export const ScreenHeader = ({ title, subtitle, icon }: ScreenHeaderProps) => {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
 
-  // Explicitly define Arrow Color
+  // Explicitly define Arrow Color to ensure visibility
   const arrowColor = isDark ? '#FFFFFF' : '#111827'; 
 
   return (
@@ -27,14 +27,12 @@ export const ScreenHeader = ({ title, subtitle, icon }: ScreenHeaderProps) => {
           accessibilityLabel="Go Back"
           accessibilityRole="button"
         >
-          {/* Explicit color ensures visibility */}
           <ArrowLeft size={28} color={arrowColor} strokeWidth={2.5} />
         </TouchableOpacity>
 
         {/* Title Area */}
         <View className="flex-1">
           <View className="flex-row items-center">
-            {/* Icon passed from parent */}
             {icon && <View className="mr-2">{icon}</View>}
             
             <Text 

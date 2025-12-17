@@ -1,14 +1,18 @@
-import { View, Text, Switch, TouchableOpacity, TextInput, ScrollView, Alert } from "react-native";
+import { View, Text, Switch, TouchableOpacity, TextInput, ScrollView, Alert, useColorScheme } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
-import { ArrowLeft, Calendar, Pill, AlertCircle, Save } from "lucide-react-native";
+import { Calendar, Pill, AlertCircle, Save, Settings as SettingsIcon } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { db } from "@/core/database/client";
 import { appSettings } from "@/core/database/schema";
 import { eq } from "drizzle-orm";
+import { ScreenHeader } from "@/components/ScreenHeader"; // Import
 
 export default function Settings() {
   const router = useRouter();
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
   const [showDaysSupply, setShowDaysSupply] = useState(true);
   const [refillThreshold, setRefillThreshold] = useState("5");
 
@@ -41,13 +45,13 @@ export default function Settings() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <View className="flex-row items-center p-5 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
-        <TouchableOpacity onPress={() => router.back()} className="p-2 -ml-2 rounded-full">
-          <ArrowLeft size={24} className="text-gray-900 dark:text-white" />
-        </TouchableOpacity>
-        <Text className="text-2xl font-bold ml-2 text-gray-900 dark:text-white">Settings</Text>
-      </View>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      {/* HEADER */}
+      <ScreenHeader 
+        title="Settings" 
+        subtitle="Preferences & Alerts"
+        icon={<SettingsIcon size={24} color={isDark ? '#9CA3AF' : '#4B5563'} />}
+      />
 
       <ScrollView className="flex-1 p-5">
         <View className="mb-8">
@@ -56,7 +60,7 @@ export default function Settings() {
             <View className="flex-row justify-between items-center">
               <View className="flex-1 mr-4">
                 <View className="flex-row items-center mb-1">
-                  {showDaysSupply ? <Calendar size={18} className="text-gray-900 dark:text-white mr-2" /> : <Pill size={18} className="text-gray-900 dark:text-white mr-2" />}
+                  {showDaysSupply ? <Calendar size={18} color={isDark ? 'white' : 'black'} className="mr-2" /> : <Pill size={18} color={isDark ? 'white' : 'black'} className="mr-2" />}
                   <Text className="text-lg font-semibold text-gray-900 dark:text-white">{showDaysSupply ? "Show Days Left" : "Show Pill Count"}</Text>
                 </View>
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">
@@ -72,7 +76,7 @@ export default function Settings() {
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-4">Safety</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700">
             <View className="flex-row items-center gap-3 mb-4">
-              <AlertCircle size={20} className="text-red-500" />
+              <AlertCircle size={20} color="#EF4444" />
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">Low Stock Alert</Text>
             </View>
             <View className="flex-row items-center">

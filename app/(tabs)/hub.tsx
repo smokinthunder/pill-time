@@ -1,6 +1,6 @@
 import { View, Text, TouchableOpacity, ScrollView, useColorScheme, Linking, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Search, MapPin, ExternalLink, Pill } from 'lucide-react-native';
+import { Search, MapPin, ExternalLink } from 'lucide-react-native';
 import { MedicineAutofill } from '@/components/MedicineAutofill';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
@@ -19,7 +19,7 @@ export default function HubScreen() {
 
   const openPharmacyMap = () => {
     const query = "Pharmacy near me";
-    const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
+    const url = Platform.OS === 'ios' ? `http://maps.apple.com/?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`;
     
     Linking.canOpenURL(url).then(supported => {
         if (supported) {
@@ -38,33 +38,51 @@ export default function HubScreen() {
         <Text className="text-gray-500 dark:text-gray-400">Resources & Helpers</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }} keyboardShouldPersistTaps="handled">
+      {/* CRITICAL FIX: 
+         We use `keyboardShouldPersistTaps="handled"` so taps on the dropdown work.
+         We do NOT use zIndex on the ScrollView, but on the items inside.
+      */}
+      <ScrollView 
+        className="flex-1" 
+        contentContainerStyle={{ paddingBottom: 100 }} 
+        keyboardShouldPersistTaps="handled"
+      >
         
-        {/* 1. MEDICINE SEARCH */}
-        <View className="mb-8">
+        {/* 1. MEDICINE SEARCH (High Z-Index) */}
+        {/* We give this container z-index 10 so it floats ABOVE the pharmacy card */}
+        <View className="mb-8 z-10">
             <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-4">Identify Pills</Text>
+            
             <View className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700">
                 <Text className="text-gray-900 dark:text-white font-bold mb-3 text-lg">Search Medicine</Text>
                 <Text className="text-gray-500 dark:text-gray-400 mb-4 text-sm">Find purpose, warnings, and usage instructions.</Text>
                 
                 {/* AUTOFILL COMPONENT */}
-                <MedicineAutofill 
-                    value={searchText} 
-                    onChange={setSearchText} 
-                    isDark={isDark} 
-                />
+                {/* We pass a prop to let it know to handle its own z-index */}
+                <View className="z-20">
+                    <MedicineAutofill 
+                        value={searchText} 
+                        onChange={setSearchText} 
+                        isDark={isDark} 
+                    />
+                </View>
 
+                {/* SEARCH BUTTON */}
+                {/* This button will be pushed down by the dropdown if relative, or covered if absolute. 
+                    Since standard autocomplete covers, that is expected behavior. 
+                    But we add margin top to ensure spacing. */}
                 <TouchableOpacity 
                     onPress={handleSearch}
-                    className="mt-4 bg-blue-600 py-3 rounded-xl items-center"
+                    className="mt-4 bg-blue-600 py-3 rounded-xl items-center -z-10"
                 >
                     <Text className="text-white font-bold">Search Database</Text>
                 </TouchableOpacity>
             </View>
         </View>
 
-        {/* 2. PHARMACY FINDER */}
-        <View className="mb-8">
+        {/* 2. PHARMACY FINDER (Low Z-Index) */}
+        {/* z-index 0 ensures it stays BEHIND the search dropdown */}
+        <View className="mb-8 z-0">
              <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-4">Local Services</Text>
             <TouchableOpacity 
                 onPress={openPharmacyMap}

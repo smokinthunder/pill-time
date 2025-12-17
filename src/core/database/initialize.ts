@@ -1,5 +1,5 @@
-import { sql } from 'drizzle-orm';
-import { db } from './client'; // Import your existing db client
+import { sql } from "drizzle-orm";
+import { db } from "./client"; // Import your existing db client
 
 export async function initializeDatabase() {
   try {
@@ -63,12 +63,35 @@ export async function initializeDatabase() {
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         show_days_supply INTEGER DEFAULT 1,
         refill_threshold_days INTEGER DEFAULT 5,
-        dark_mode INTEGER DEFAULT 0
+        user_name TEXT DEFAULT 'Grandpa',
+        haptic_enabled INTEGER DEFAULT 1,
+        theme_preference TEXT DEFAULT 'system'
+
       );
     `);
+    // 2. MIGRATION BLOCK (Safe to run every time)
+    // This ensures new columns are added if you are updating an existing app
+    const runMigration = async () => {
+      try {
+        await db.run(
+          `ALTER TABLE app_settings ADD COLUMN user_name TEXT DEFAULT 'Grandpa';`
+        );
+      } catch (e) {}
+      try {
+        await db.run(
+          `ALTER TABLE app_settings ADD COLUMN haptic_enabled INTEGER DEFAULT 1;`
+        );
+      } catch (e) {}
+      try {
+        await db.run(
+          `ALTER TABLE app_settings ADD COLUMN theme_preference TEXT DEFAULT 'system';`
+        );
+      } catch (e) {}
+    };
+    await runMigration();
 
-    console.log('Database initialized successfully');
+    console.log("Database initialized successfully");
   } catch (error) {
-    console.error('Database initialization failed:', error);
+    console.error("Database initialization failed:", error);
   }
 }

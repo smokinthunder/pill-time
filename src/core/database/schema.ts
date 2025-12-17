@@ -114,9 +114,15 @@ export const refillsRelations = relations(refills, ({ one }) => ({
   }),
 }));
 
-export const appSettings = sqliteTable('app_settings', {
-  id: integer('id').primaryKey({ autoIncrement: true }),
-  showDaysSupply: integer('show_days_supply', { mode: 'boolean' }).default(true),
-  refillThresholdDays: integer('refill_threshold_days').default(5),
-  darkMode: integer('dark_mode', { mode: 'boolean' }).default(false), 
+export const appSettings = sqliteTable("app_settings", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  
+  // Existing
+  showDaysSupply: integer("show_days_supply", { mode: "boolean" }).default(true),
+  refillThresholdDays: integer("refill_threshold_days").default(5),
+  
+  // NEW FEATURES
+  userName: text("user_name").default("Grandpa"),
+  hapticEnabled: integer("haptic_enabled", { mode: "boolean" }).default(true),
+  themePreference: text("theme_preference").default("system"), // 'system', 'light', 'dark'
 });

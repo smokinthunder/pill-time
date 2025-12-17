@@ -4,17 +4,19 @@ import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
+import { useColorScheme } from 'nativewind'; // IMPORT NATIVEWIND hook
 import 'react-native-reanimated';
 
 import '@/global.css';
-import { useColorScheme } from '@/hooks/use-color-scheme';
 import { initializeDatabase } from '@/core/database/initialize';
 import { ThemeAlertProvider } from '@/context/ThemeAlertContext';
+import { db } from '@/core/database/client';
+import { appSettings } from '@/core/database/schema';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  const colorScheme = useColorScheme();
+  const { colorScheme, setColorScheme } = useColorScheme(); // NativeWind hook
   const [dbReady, setDbReady] = useState(false);
 
   const [fontsLoaded, fontError] = useFonts({
@@ -27,9 +29,17 @@ export default function RootLayout() {
     const setup = async () => {
       try {
         await initializeDatabase();
+        
+        // --- 1. SYNC THEME FROM DATABASE ---
+        const settings = await db.select().from(appSettings).limit(1);
+        if (settings.length > 0 && settings[0].themePreference) {
+           // Apply the saved theme ('system' | 'light' | 'dark')
+           setColorScheme(settings[0].themePreference as any);
+        }
+        
         setDbReady(true);
       } catch (e) {
-        console.error("DB Error:", e);
+        console.error("Setup Error:", e);
       }
     };
     setup();
@@ -44,6 +54,7 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
+    // Pass the active colorScheme to Navigation Theme
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <ThemeAlertProvider>
         <Stack screenOptions={{ headerShown: false }}>

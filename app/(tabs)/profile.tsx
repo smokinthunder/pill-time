@@ -1,14 +1,16 @@
 import { View, Text, Switch, TouchableOpacity, TextInput, ScrollView, Vibration, Keyboard } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Calendar, Pill, AlertCircle, Save, User, Smartphone, Moon, Sun, Monitor, CloudDownload, LogOut } from "lucide-react-native";
+import { Calendar, Pill, AlertCircle, Save, User, Smartphone, Moon, Sun, Monitor, CloudDownload } from "lucide-react-native";
 import { useState, useEffect } from "react";
 import { useColorScheme } from "nativewind"; 
+import { useRouter } from "expo-router"; // <--- 1. IMPORT ROUTER
 import { db } from "@/core/database/client";
 import { appSettings } from "@/core/database/schema";
 import { eq } from "drizzle-orm";
 import { useThemeAlert } from "@/context/ThemeAlertContext";
 
 export default function ProfileScreen() {
+  const router = useRouter(); // <--- 2. INITIALIZE ROUTER
   const { showAlert } = useThemeAlert();
   const { colorScheme, setColorScheme } = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -91,10 +93,13 @@ export default function ProfileScreen() {
 
       <ScrollView className="flex-1" contentContainerStyle={{ paddingBottom: 100 }}>
         
-        {/* 1. DATA MANAGEMENT (New) */}
+        {/* 1. DATA MANAGEMENT (Entry Point Added Here) */}
         <View className="mb-8">
             <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-4">My Data</Text>
-            <TouchableOpacity className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex-row items-center">
+            <TouchableOpacity 
+                onPress={() => router.push("/backup")} // <--- 3. ADDED NAVIGATION
+                className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 flex-row items-center active:opacity-70"
+            >
                 <CloudDownload size={24} className="text-gray-900 dark:text-white mr-4" />
                 <View className="flex-1">
                     <Text className="text-lg font-bold text-gray-900 dark:text-white">Backup & Restore</Text>
@@ -135,7 +140,7 @@ export default function ProfileScreen() {
         <View className="mb-8">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-4">Preferences</Text>
           <View className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm border border-gray-100 dark:border-gray-700 gap-6">
-            
+           
             {/* Toggle: Days vs Pills */}
             <View className="flex-row justify-between items-center">
               <View className="flex-1 mr-4">

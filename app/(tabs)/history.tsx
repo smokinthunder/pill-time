@@ -11,6 +11,8 @@ import * as Sharing from 'expo-sharing';
 import { db } from "@/core/database/client";
 import { logs, medications, refills } from "@/core/database/schema";
 import { useThemeAlert } from "@/context/ThemeAlertContext";
+import { seedDatabase } from "@/core/database/seed"; // <--- IMPORT THE SEED FUNCTION
+
 
 export default function HistoryScreen() {
   const { showAlert } = useThemeAlert();
@@ -59,39 +61,17 @@ export default function HistoryScreen() {
     setWeeklyStats(stats);
   };
 
-  // --- SEED DATA BUTTON ---
+  // --- SEED DATA BUTTON (CLEANER NOW) ---
   const handleSeedData = async () => {
     try {
-        await db.transaction(async (tx) => {
-            const med = await tx.insert(medications).values({
-                name: "Test-Vitamin C",
-                description: "Immunity",
-                unit: "mg",
-                currentStock: 15,
-                totalStockLevel: 30
-            }).returning();
-            const medId = med[0].id;
-
-            await tx.insert(logs).values({ medicationId: medId, action: "TAKEN", timestamp: new Date(Date.now() - 10000000) });
-            await tx.insert(logs).values({ medicationId: medId, action: "SKIPPED", timestamp: new Date(Date.now() - 5000000) });
-            await tx.insert(logs).values({ medicationId: medId, action: "TAKEN", timestamp: new Date() });
-
-            await tx.insert(refills).values({
-                medicationId: medId,
-                qty: 30,
-                price: 12.99,
-                pharmacyName: "Local Chemist",
-                refillDate: new Date()
-            });
-        });
-        showAlert({ title: "Data Injected", message: "Added dummy records.", variant: 'success' });
+        await seedDatabase(); // <--- CALL THE IMPORTED FUNCTION
+        showAlert({ title: "Data Injected", message: "Added dummy medications, logs, and refills.", variant: 'success' });
         fetchData(); 
     } catch (e) {
         console.error(e);
         showAlert({ title: "Error", message: "Failed to seed data.", variant: 'danger' });
     }
   };
-
   const generatePDF = async (type: 'DOCTOR' | 'PHARMACY') => {
     try {
         let htmlContent = "";

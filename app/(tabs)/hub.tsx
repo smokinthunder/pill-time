@@ -18,8 +18,8 @@ export default function HubScreen() {
   };
 
   const openPharmacyMap = () => {
-    const query = "Pharmacy near me";
-    const url = Platform.OS === 'ios' ? `http://maps.apple.com/?q=${query}` : `https://www.google.com/maps/search/?api=1&query=${query}`;
+    const query = "Pharmacy+near+me";
+    const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
     
     Linking.canOpenURL(url).then(supported => {
         if (supported) {

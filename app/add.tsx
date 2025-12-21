@@ -4,30 +4,21 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert,
   Platform,
   useColorScheme,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useRouter, useLocalSearchParams } from "expo-router"; // Import Search Params
+import { useRouter, useLocalSearchParams } from "expo-router";
 import { useState, useEffect } from "react";
-import {
-  Calendar,
-  Clock,
-  Save,
-  Plus,
-  Trash2,
-  Hash,
-  Pill,
-} from "lucide-react-native";
+import { Clock, Save, Plus, Trash2, Hash, Pill } from "lucide-react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "@/core/database/client";
 import { medications, doses } from "@/core/database/schema";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useThemeAlert } from "@/context/ThemeAlertContext";
-import { MedicineAutofill } from "@/components/MedicineAutofill"; // IMPORT AUTOFILL
-import { scheduleDoseNotification } from "@/utils/notifications"; // Import
+import { MedicineAutofill } from "@/components/MedicineAutofill";
 
+// Helper to format Date -> "08:00"
 const formatTime = (date: Date) => {
   return date.toLocaleTimeString([], {
     hour: "2-digit",
@@ -38,7 +29,7 @@ const formatTime = (date: Date) => {
 
 export default function AddMedicine() {
   const router = useRouter();
-  const params = useLocalSearchParams(); // Get params
+  const params = useLocalSearchParams();
   const { showAlert } = useThemeAlert();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -57,7 +48,7 @@ export default function AddMedicine() {
     index: number;
   }>({ visible: false, index: -1 });
 
-  // PRE-FILL NAME IF PASSED
+  // PRE-FILL NAME IF PASSED (From Hub or Search)
   useEffect(() => {
     if (params.initialName) {
       setName(params.initialName as string);
@@ -93,7 +84,8 @@ export default function AddMedicine() {
   };
 
   const handleSave = async () => {
-    if (!name || !currentStock) {
+    // 1. Validation Check
+    if (!name || name.trim() === "" || !currentStock) {
       showAlert({
         title: "Missing Info",
         message: "Please enter the medicine Name and Current Stock.",
@@ -103,101 +95,47 @@ export default function AddMedicine() {
     }
 
     try {
+      console.log("Saving Medicine:", { name, currentStock }); // DEBUG LOG
+
       await db.transaction(async (tx) => {
+        // 2. Insert Medicine (EXPLICIT MAPPING)
         const medResult = await tx
           .insert(medications)
           .values({
-            name,
-            description,
-            unit,
-            currentStock: parseFloat(currentStock),
-            totalStockLevel: parseFloat(currentStock),
+            name: name.trim(), // <--- Explicitly use the state variable
+            description: description || null,
+            unit: unit,
+            currentStock: parseFloat(currentStock) || 0,
+            totalStockLevel: parseFloat(currentStock) || 0,
+            // created_at is handled automatically by database default
           })
           .returning({ id: medications.id });
 
         const medId = medResult[0].id;
 
+        // 3. Insert Doses
         for (const dose of doseList) {
           await tx.insert(doses).values({
             medicationId: medId,
             time: formatTime(dose.time),
             qty: parseFloat(dose.qty) || 1,
             days: frequency === "WEEKLY" ? JSON.stringify(selectedDays) : null,
+            notificationId: null, // Explicitly null since we disabled notifications for now
           });
         }
       });
 
-      await db.transaction(async (tx) => {
-        const medResult = await tx
-          .insert(medications)
-          .values({
-            // ... existing values ...
-          })
-          .returning({ id: medications.id });
-
-        const medId = medResult[0].id;
-
-        for (const dose of doseList) {
-          // Parse Time (HH:MM)
-          const timeDate = dose.time;
-          const hour = timeDate.getHours();
-          const minute = timeDate.getMinutes();
-          const doseQty = dose.qty;
-
-          if (frequency === "DAILY") {
-            // 1. Schedule Daily
-            const notifId = await scheduleDoseNotification(
-              `Time for ${name}`,
-              `Take ${doseQty} ${unit}.`,
-              hour,
-              minute,
-            );
-
-            // 2. Save to DB
-            await tx.insert(doses).values({
-              medicationId: medId,
-              time: formatTime(dose.time),
-              qty: parseFloat(dose.qty) || 1,
-              days: null,
-              notificationId: notifId || null, // SAVE ID
-            });
-          } else {
-            // WEEKLY LOGIC
-            // We need to schedule ONE notification PER selected day
-            const storedIds = [];
-
-            for (const dayIndex of selectedDays) {
-              const notifId = await scheduleDoseNotification(
-                `Time for ${name}`,
-                `Take ${doseQty} ${unit}.`,
-                hour,
-                minute,
-                dayIndex, // Pass the day
-              );
-              if (notifId) storedIds.push(notifId);
-            }
-
-            await tx.insert(doses).values({
-              medicationId: medId,
-              time: formatTime(dose.time),
-              qty: parseFloat(dose.qty) || 1,
-              days: JSON.stringify(selectedDays),
-              notificationId: JSON.stringify(storedIds), // SAVE ARRAY OF IDs
-            });
-          }
-        }
-      });
       showAlert({
         title: "Success!",
         message: `${name} has been added.`,
         variant: "success",
         buttons: [{ text: "Done", onPress: () => router.back() }],
       });
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      console.error("Save Failed:", e);
       showAlert({
-        title: "Error",
-        message: "Could not save medicine.",
+        title: "Database Error",
+        message: e.message || "Could not save.",
         variant: "danger",
       });
     }
@@ -219,6 +157,7 @@ export default function AddMedicine() {
         contentContainerStyle={{ paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
       >
+        {/* Medicine Details */}
         <View className="mb-6">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
             Medicine Details
@@ -228,7 +167,6 @@ export default function AddMedicine() {
               <Text className="text-gray-500 dark:text-gray-400 text-xs font-bold uppercase mb-1">
                 Name
               </Text>
-              {/* REPLACED TEXTINPUT WITH AUTOFILL */}
               <MedicineAutofill
                 value={name}
                 onChange={setName}
@@ -278,9 +216,7 @@ export default function AddMedicine() {
           </View>
         </View>
 
-        {/* ... (The rest of Inventory and Schedule sections remain EXACTLY the same) ... */}
-        {/* I am truncating here to save space, but DO NOT delete the Inventory/Schedule code you already have! */}
-
+        {/* Inventory */}
         <View className="mb-6 -z-10">
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
             Inventory
@@ -310,9 +246,8 @@ export default function AddMedicine() {
           </View>
         </View>
 
+        {/* Schedule */}
         <View className="mb-6 -z-10">
-          {/* ... Schedule Section Logic (Toggle Daily/Weekly, Dose List) ... */}
-          {/* PASTE YOUR EXISTING SCHEDULE CODE HERE */}
           <Text className="text-sm font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider mb-3">
             Schedule
           </Text>
@@ -374,6 +309,7 @@ export default function AddMedicine() {
               </TouchableOpacity>
             </View>
 
+            {/* Weekly Selector (Stable Display Logic) */}
             <View
               className="flex-row justify-between mb-6"
               style={{ display: frequency === "WEEKLY" ? "flex" : "none" }}

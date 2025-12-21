@@ -1,96 +1,102 @@
-import { sql } from "drizzle-orm";
-import { db } from "./client"; // Import your existing db client
+import { openDatabaseSync } from "expo-sqlite";
+import { drizzle } from "drizzle-orm/expo-sqlite";
+import { expoDb as sqliteDb } from "./client";
+// Open the database file
+// const sqliteDb = openDatabaseSync("medicinedb.db");
+export const db = drizzle(sqliteDb);
 
-export async function initializeDatabase() {
+export const initializeDatabase = async () => {
   try {
-    // 1. Enable Foreign Keys
-    await db.run(sql`PRAGMA foreign_keys = ON;`);
+    // 1. ENABLE FOREIGN KEYS
+    await sqliteDb.execAsync("PRAGMA foreign_keys = ON;");
 
-    // 2. Create MEDICATIONS Table
-    await db.run(sql`
+    // 2. CREATE TABLES (The Blueprints)
+
+    // Medications Table
+    await sqliteDb.execAsync(`
       CREATE TABLE IF NOT EXISTS medications (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
         description TEXT,
-        unit TEXT DEFAULT 'nos',
-        current_stock REAL DEFAULT 0 NOT NULL,
+        unit TEXT NOT NULL,
+        current_stock REAL NOT NULL,
         total_stock_level REAL,
-        created_at INTEGER DEFAULT (strftime('%s', 'now'))
+        refill_threshold REAL,
+        created_at INTEGER 
       );
     `);
 
-    // 3. Create DOSES Table (This was missing!)
-    await db.run(sql`
+    // Doses Table (FIXED: Added notification_id directly to blueprint)
+    await sqliteDb.execAsync(`
       CREATE TABLE IF NOT EXISTS doses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         medication_id INTEGER NOT NULL,
-        days TEXT,
         time TEXT NOT NULL,
-        qty REAL DEFAULT 1.0 NOT NULL,
+        qty REAL NOT NULL,
+        days TEXT,
+        notification_id TEXT, 
         FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE CASCADE
       );
     `);
 
-    // 4. Create LOGS Table
-    await db.run(sql`
+    // Logs Table
+    await sqliteDb.execAsync(`
       CREATE TABLE IF NOT EXISTS logs (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         medication_id INTEGER NOT NULL,
         dose_id INTEGER,
         action TEXT NOT NULL,
-        timestamp INTEGER DEFAULT (strftime('%s', 'now')),
-        FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE CASCADE,
-        FOREIGN KEY (dose_id) REFERENCES doses(id)
+        timestamp INTEGER NOT NULL,
+        FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE CASCADE
       );
     `);
 
-    // 5. Create REFILLS Table
-    await db.run(sql`
+    // Refills Table
+    await sqliteDb.execAsync(`
       CREATE TABLE IF NOT EXISTS refills (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         medication_id INTEGER NOT NULL,
         qty REAL NOT NULL,
         price REAL,
         pharmacy_name TEXT,
-        refill_date INTEGER DEFAULT (strftime('%s', 'now')),
+        refill_date INTEGER NOT NULL,
         FOREIGN KEY (medication_id) REFERENCES medications(id) ON DELETE CASCADE
       );
     `);
 
-    // 6. Create APP_SETTINGS Table (This was missing!)
-    await db.run(sql`
+    // App Settings Table
+    await sqliteDb.execAsync(`
       CREATE TABLE IF NOT EXISTS app_settings (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_name TEXT DEFAULT 'Grandpa',
         show_days_supply INTEGER DEFAULT 1,
         refill_threshold_days INTEGER DEFAULT 5,
-        user_name TEXT DEFAULT 'Grandpa',
         haptic_enabled INTEGER DEFAULT 1,
         theme_preference TEXT DEFAULT 'system'
-
       );
     `);
-    // 2. MIGRATION BLOCK (Safe to run every time)
-    // This ensures new columns are added if you are updating an existing app
+
+    // 3. MIGRATION BLOCK (The "Safety Net")
+    // Runs on every startup to catch databases that were made before we added columns
     const runMigration = async () => {
       try {
-        await db.run(
+        await sqliteDb.execAsync(
+          `ALTER TABLE doses ADD COLUMN notification_id TEXT;`,
+        );
+      } catch (e) {}
+      try {
+        await sqliteDb.execAsync(
           `ALTER TABLE app_settings ADD COLUMN user_name TEXT DEFAULT 'Grandpa';`,
         );
       } catch (e) {}
       try {
-        await db.run(
+        await sqliteDb.execAsync(
           `ALTER TABLE app_settings ADD COLUMN haptic_enabled INTEGER DEFAULT 1;`,
         );
       } catch (e) {}
       try {
-        await db.run(
-          `ALTER TABLE app_settings ADD COLUMN theme_preference TEXT DEFAULT 'system';`,
-        );
-      } catch (e) {}
-      // NEW MIGRATION:
-      try {
         await sqliteDb.execAsync(
-          `ALTER TABLE doses ADD COLUMN notification_id TEXT;`,
+          `ALTER TABLE app_settings ADD COLUMN theme_preference TEXT DEFAULT 'system';`,
         );
       } catch (e) {}
     };
@@ -100,4 +106,4 @@ export async function initializeDatabase() {
   } catch (error) {
     console.error("Database initialization failed:", error);
   }
-}
+};

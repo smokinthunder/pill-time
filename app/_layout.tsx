@@ -97,7 +97,8 @@ export default function RootLayout() {
   }, [isReady, fontsLoaded, shouldShowOnboarding]);
 
   // 5. RENDER
-  if (!fontsLoaded || !isReady) return null;
+  if (!fontsLoaded || !isReady)
+    return null;
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

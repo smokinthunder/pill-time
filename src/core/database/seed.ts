@@ -6,9 +6,9 @@ export const seedDatabase = async () => {
     console.log("🌱 Starting fresh seed...");
 
     // 1. CLEAR EXISTING DATA (The "Nuke" option for Dev)
-    // We delete logs and doses first because they depend on medications
     await db.delete(logs);
     await db.delete(doses);
+    await db.delete(refills); // Clear refills too
     await db.delete(medications);
 
     console.log("🧹 Old data cleared.");
@@ -70,7 +70,7 @@ export const seedDatabase = async () => {
       .insert(doses)
       .values([{ medicationId: lisId, time: "07:00", qty: 1.0, days: null }]);
 
-    // Log: SKIPPED Yesterday (for history testing)
+    // Log: SKIPPED Yesterday
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
     yesterday.setHours(7, 30, 0, 0);
@@ -106,10 +106,9 @@ export const seedDatabase = async () => {
     });
 
     // ====================================================
-    // SCENARIO 5: Refill History (Price Comparison)
+    // SCENARIO 4: Refill History (Price Comparison)
     // ====================================================
-    // Let's add purchase history for Metformin to compare prices
-
+    
     // Purchase 1: Expensive (CVS)
     await db.insert(refills).values({
       medicationId: metId, // From previous step
@@ -119,7 +118,7 @@ export const seedDatabase = async () => {
       refillDate: new Date("2024-10-01"),
     });
 
-    // Purchase 2: Cheap (Walmart) - BEST PRICE
+    // Purchase 2: Cheap (Walmart)
     await db.insert(refills).values({
       medicationId: metId,
       qty: 90,
@@ -128,17 +127,9 @@ export const seedDatabase = async () => {
       refillDate: new Date("2024-11-15"),
     });
 
-    // Purchase 3: Moderate (Walgreens)
-    await db.insert(refills).values({
-      medicationId: metId,
-      qty: 30,
-      price: 12.0, // $0.40 per pill
-      pharmacyName: "Walgreens",
-      refillDate: new Date("2024-12-05"),
-    });
-
-    console.log("✅ Seeding Complete with Logs!");
+    console.log("✅ Seeding Complete with Logs & Refills!");
   } catch (e) {
     console.error("❌ Seeding Error:", e);
+    throw e; // Throw so the UI knows it failed
   }
 };

@@ -38,6 +38,7 @@ export const doses = sqliteTable('doses', {
 
   time: text('time').notNull(), // Format: "08:00", "22:30"
   qty: real('qty').notNull().default(1.0), // How many to take at this specific time
+  notificationId: text("notification_id"), // <--- NEW COLUMN for notification 
 });
 
 // --------------------------------------------------------

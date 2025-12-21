@@ -74,17 +74,23 @@ export async function initializeDatabase() {
     const runMigration = async () => {
       try {
         await db.run(
-          `ALTER TABLE app_settings ADD COLUMN user_name TEXT DEFAULT 'Grandpa';`
+          `ALTER TABLE app_settings ADD COLUMN user_name TEXT DEFAULT 'Grandpa';`,
         );
       } catch (e) {}
       try {
         await db.run(
-          `ALTER TABLE app_settings ADD COLUMN haptic_enabled INTEGER DEFAULT 1;`
+          `ALTER TABLE app_settings ADD COLUMN haptic_enabled INTEGER DEFAULT 1;`,
         );
       } catch (e) {}
       try {
         await db.run(
-          `ALTER TABLE app_settings ADD COLUMN theme_preference TEXT DEFAULT 'system';`
+          `ALTER TABLE app_settings ADD COLUMN theme_preference TEXT DEFAULT 'system';`,
+        );
+      } catch (e) {}
+      // NEW MIGRATION:
+      try {
+        await sqliteDb.execAsync(
+          `ALTER TABLE doses ADD COLUMN notification_id TEXT;`,
         );
       } catch (e) {}
     };

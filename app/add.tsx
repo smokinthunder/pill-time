@@ -17,6 +17,8 @@ import { medications, doses } from "@/core/database/schema";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useThemeAlert } from "@/context/ThemeAlertContext";
 import { MedicineAutofill } from "@/components/MedicineAutofill";
+import { scheduleDoseNotification } from "@/utils/notifications"; 
+
 
 // Helper to format Date -> "08:00"
 const formatTime = (date: Date) => {
@@ -115,12 +117,23 @@ export default function AddMedicine() {
 
         // 3. Insert Doses
         for (const dose of doseList) {
+          // --- ENABLED NOTIFICATION LOGIC ---
+          const doseDate = new Date(dose.time);
+          const notifId = await scheduleDoseNotification(
+            `Time for ${name}`,
+            `Take ${dose.qty} ${unit}`,
+            doseDate.getHours(),
+            doseDate.getMinutes(),
+            frequency === "WEEKLY" ? selectedDays : [],
+          );
+          // ----------------------------------
+
           await tx.insert(doses).values({
             medicationId: medId,
             time: formatTime(dose.time),
             qty: parseFloat(dose.qty) || 1,
             days: frequency === "WEEKLY" ? JSON.stringify(selectedDays) : null,
-            notificationId: null, // Explicitly null since we disabled notifications for now
+            notificationId: notifId, // <--- SAVING THE REAL ID
           });
         }
       });

@@ -1,7 +1,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 
-// 1. CONFIGURE BEHAVIOR
+// 1. CONFIGURE
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
     shouldShowAlert: true,
@@ -10,7 +10,7 @@ Notifications.setNotificationHandler({
   }),
 });
 
-// 2. HELPER: CREATE CHANNEL (Required for Android)
+// 2. CHANNEL (Required for Android)
 async function ensureNotificationChannel() {
   if (Platform.OS === 'android') {
     await Notifications.setNotificationChannelAsync('default', {
@@ -22,7 +22,7 @@ async function ensureNotificationChannel() {
   }
 }
 
-// 3. REQUEST PERMISSIONS
+// 3. PERMISSIONS
 export async function requestLocalNotificationPermissions() {
   const { status: existingStatus } = await Notifications.getPermissionsAsync();
   let finalStatus = existingStatus;
@@ -34,7 +34,7 @@ export async function requestLocalNotificationPermissions() {
   return finalStatus === 'granted';
 }
 
-// 4. SCHEDULE NOTIFICATION
+// 4. SCHEDULE
 export async function scheduleDoseNotification(
     title: string, 
     body: string, 
@@ -45,45 +45,59 @@ export async function scheduleDoseNotification(
   try {
     await ensureNotificationChannel();
 
-    // STRICT INT CONVERSION
-    const hour = parseInt(rawHour.toString(), 10);
-    const minute = parseInt(rawMinute.toString(), 10);
+    const hour = Number(rawHour);
+    const minute = Number(rawMinute);
 
     if (isNaN(hour) || isNaN(minute)) {
         console.error("❌ Invalid Time:", { rawHour, rawMinute });
         return null;
     }
 
-    // --- TRIGGER CONSTRUCTION ---
-    // We explicitly attach channelId to the trigger for Android validation
-    const trigger: any = {
-        hour,
-        minute,
-        repeats: true,
-        ...(Platform.OS === 'android' && { channelId: 'default' }), // <--- ADDED HERE
-    };
+    // --- THE FINAL FIX ---
+    // We strictly distinguish between DAILY and WEEKLY types.
+    // We do NOT use 'calendar' or 'repeats: true'.
+    
+    let trigger: any;
 
     if (days.length > 0) {
+        // WEEKLY TRIGGER
         // Expo Weekdays: 1 (Sun) - 7 (Sat)
         // JS Days: 0 (Sun) - 6 (Sat)
-        trigger.weekday = Number(days[0]) + 1;
+        trigger = {
+            type: Notifications.SchedulableTriggerInputTypes.WEEKLY,
+            weekday: Number(days[0]) + 1,
+            hour,
+            minute,
+        };
+    } else {
+        // DAILY TRIGGER
+        trigger = {
+            type: Notifications.SchedulableTriggerInputTypes.DAILY,
+            hour,
+            minute,
+        };
     }
 
-    // --- CONTENT CONSTRUCTION ---
+    // --- CONTENT ---
     const content: Notifications.NotificationContentInput = {
         title,
         body,
         sound: 'default',
         priority: Notifications.AndroidNotificationPriority.HIGH,
-        ...(Platform.OS === 'android' && { channelId: 'default' }), // KEEP HERE TOO
     };
+
+    // Attach Channel ID to CONTENT (Correct place for Android)
+    if (Platform.OS === 'android') {
+        // @ts-ignore
+        content.channelId = 'default';
+    }
 
     const id = await Notifications.scheduleNotificationAsync({
       content,
       trigger,
     });
     
-    console.log(`🔔 Scheduled: ${hour}:${minute} (ID: ${id})`);
+    console.log(`🔔 Scheduled (${trigger.type}): ${hour}:${minute} (ID: ${id})`);
     return id;
 
   } catch (e) {

@@ -128,7 +128,7 @@ export default function HistoryScreen() {
         <View className="bg-white dark:bg-gray-800 p-5 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
              <View className="flex-row items-center mb-4">
                 <TrendingUp size={20} color={isDark ? '#4ADE80' : '#16A34A'} className="mr-2" />
-                <Text className="text-lg font-bold text-gray-900 dark:text-white">Activity (Last 7 Days)</Text>
+                <Text className="text-lg font-bold text-gray-900 dark:text-white ml-3">Activity (Last 7 Days)</Text>
              </View>
              <View className="flex-row justify-between items-end h-24 pb-2">
                 {weeklyStats.map((stat, index) => (

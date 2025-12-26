@@ -170,7 +170,7 @@ export default function ProfileScreen() {
                  <Text className="text-lg font-semibold text-gray-900 dark:text-white">Low Stock Alert</Text>
                </View>
                <View className="flex-row items-center">
-                 <TextInput value={refillThreshold} onChangeText={setRefillThreshold} keyboardType="numeric" className="bg-gray-100 dark:bg-gray-700 h-10 w-16 rounded-xl text-center text-lg font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600" />
+                 <TextInput value={refillThreshold} onChangeText={setRefillThreshold} keyboardType="numeric" className="bg-gray-100 dark:bg-gray-700 h-12 w-16 rounded-xl text-center text-lg font-bold text-gray-900 dark:text-white border border-gray-200 dark:border-gray-600" />
                  <Text className="text-base font-bold text-gray-500 dark:text-gray-400 ml-2">Days</Text>
                </View>
             </View>
